@@ -15,6 +15,7 @@ ENV PoolMaxTemp=30
 ENV ForceDevice=false
 ENV TempOffset=1
 ENV APPDATA="/"
+ENV Debug=false
 
 COPY AutoPoolHeater.ps1 AutoPoolHeater.ps1
 ENTRYPOINT pwsh -file AutoPoolHeater.ps1
