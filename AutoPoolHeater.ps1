@@ -13,6 +13,23 @@ write-host "PoolMaxTemp=$env:PoolMaxTemp"
 write-host "Debug=$debug"
 write-host "*********************************************************"
 
+if("" -eq $env:AccessToken){
+    Write-Host "AccessToken not detected!"
+    Write-Host "Creating AccessToken..."
+    Connect-TelldusLive -SaveCredential
+    $AccessTokenFolder = Join-Path -Path $($env:APPDATA) -ChildPath AutomaTD
+    $AccessTokenFilePath = Join-Path -Path $AccessTokenFolder -ChildPath TelldusAccessToken-Default.json
+    $AccessTokenFromDisk = Get-Content $AccessTokenFilePath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $Token = $AccessTokenFromDisk.Token
+    $EncryptedTokenSecret = $AccessTokenFromDisk.TokenSecret | ConvertTo-SecureString
+    $credential = New-Object System.Management.Automation.PSCredential ('u', $EncryptedTokenSecret)
+    $TokenSecret = $credential.GetNetworkCredential().Password
+    write-host "Token: $Token TokenSecret: $TokenSecret"
+    Write-Host "Save this!"
+
+    exit
+}
+
 DO
 {
     $currentTime = $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')
