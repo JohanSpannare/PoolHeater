@@ -4,9 +4,11 @@ write-host "*********************************************************"
 write-host "SecondsToSleep=$env:SecondsToSleep"
 write-host "TempOffset=$env:TempOffset"
 write-host "ForceDevice=$forceDevice"
-write-host "PoolOnOffDeviceName=$env:PoolOnOffDeviceName"
+write-host "PoolPumpDeviceName=$env:PoolPumpDeviceName"
 write-host "PoolTempDeviceName=$env:PoolTempDeviceName"
 write-host "PoolInTempDeviceName=$env:PoolInTempDeviceName"
+write-host "PoolOnOffDeviceName=$env:PoolOnOffDeviceName"
+
 write-host "PoolMaxTemp=$env:PoolMaxTemp"
 write-host "Debug=$debug"
 write-host "*********************************************************"
@@ -23,7 +25,13 @@ DO
     # Start Or Stop Pool Pump based on temperature
     $pool_sensor = Get-TDSensor | where-object{$_.Name -eq $env:PoolTempDeviceName}
     $poolUt_sensor = Get-TDSensor | where-object{$_.Name -eq $env:PoolInTempDeviceName}
-    $poolPump_Device = Get-TDDevice | Where-Object {$_.Name -eq $env:PoolOnOffDeviceName}
+    $poolPump_Device = Get-TDDevice | Where-Object {$_.Name -eq $env:PoolPumpDeviceName}
+
+    $enabled = $true
+    if($env:PoolOnOffDeviceName -ne ""){
+        $poolOnOff_Device = Get-TDDevice | Where-Object {$_.Name -eq $env:PoolOnOffDeviceName}
+        $enabled = $poolOnOff_Device.State -eq "On"
+    }
 
     [decimal]$poolUt_sensor.temp= [decimal]$poolUt_sensor.temp -$env:TempOffset
 
@@ -32,6 +40,7 @@ DO
     $maxPoolTempReached = $pool_sensor.temp -ge $env:PoolMaxTemp
 
     if($debug){
+        write-host "DBG: AutoPoolHeater is $enabled"
         Write-Host 'DBG: Temp Offset ' $env:TempOffset 'C'
         Write-Host 'DBG: Sun temp ' $poolUt_sensor.temp 'C'
         Write-Host 'DBG: Pool temp ' $pool_sensor.temp 'C'
@@ -44,7 +53,9 @@ DO
         $startPump = $false;
     }
 
-    if($startPump)
+    
+
+    if($startPump -and $enabled)
     {
         if(-NOT $forceDevice -AND $poolPump_Device.State -eq "On") 
         { 
@@ -59,7 +70,7 @@ DO
         Set-TDDevice -DeviceID $($poolPump_Device.DeviceID) -Action turnOn
     }
 
-    if(!$startPump)
+    if(!$startPump -and $enabled)
     {
         if(-NOT $forceDevice -AND $poolPump_Device.State -eq "Off")
         { 
